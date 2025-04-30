@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>root@kali:~</title>
+  <style>
+    @keyframes crtFlicker {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.95; }
+      60% { opacity: 0.98; }
+      70% { opacity: 0.93; }
+      80% { opacity: 0.97; }
+      90% { opacity: 0.96; }
+    }
+
+    body {
+      background-color: #1e1e1e;
+      font-family: 'Courier New', Courier, monospace;
+      color: #00ff66;
+      animation: crtFlicker 1.5s infinite;
+      padding: 0;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .terminal-container {
+      background-color: #2d2d2d;
+      width: 80%;
+      max-width: 800px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.6);
+      overflow: hidden;
+      display: none;
+    }
+
+    .terminal-header {
+      background-color: #444;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mac-buttons {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .mac-close { background-color: #ff605c; }
+    .mac-minimize { background-color: #ffbd44; }
+    .mac-maximize { background-color: #00ca56; }
+
+    .terminal {
+      background-color: #2d2d2d;
+      padding: 20px;
+      white-space: pre-wrap;
+      min-height: 300px;
+      animation: crtFlicker 1.5s infinite;
+    }
+
+    .terminal::before {
+      content: "root@kali:~# ";
+      color: #ff4b4b;
+      font-weight: bold;
+    }
+
+    input, button {
+      font-family: 'Arial', sans-serif;
+      padding: 10px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 4px;
+      outline: none;
+    }
+
+    input {
+      width: 100%;
+      max-width: 400px;
+      background-color: white;
+      color: #1e1e1e;
+    }
+
+    button {
+      background-color: #00ff66;
+      color: #1e1e1e;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: none;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #00e65c;
+      transform: translateY(-2px);
+    }
+
+    .hidden { display: none; }
+    .correct { color: #00ff66; }
+
+    #loadingBar {
+      font-family: 'Courier New', Courier, monospace;
+      color: #00ff66;
+      font-weight: bold;
+      white-space: pre;
+      margin-top: 10px;
+    }
+
+    .centered {
+      text-align: center;
+      padding: 20px;
+    }
+
+    #challengeQuestion {
+      color: white;
+      font-size: 18px;
+      margin-bottom: 20px;
+    }
+
+    .loading-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #000;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: flex-start;
+      color: #00ff66;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 20px;
+      padding: 20px;
+      box-sizing: border-box;
+      animation: crtFlicker 1.5s infinite;
+    }
+
+    .loading-screen p {
+      margin: 10px 0;
+      visibility: hidden;
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-screen" id="loadingScreen">
+    <p id="sentence1">Connecting to your message...</p>
+    <p id="sentence2">Authenticating sender...</p>
+    <p id="sentence3">Loading quiet gratitude...</p>
+    <p id="sentence4">Decrypting affection...</p>
+    <p id="sentence5">Preparing something personal...</p>
+    <p id="sentence6">Ready. Press reveal when you're ready.</p>
+  </div>
+
+  <div class="terminal-container" id="terminalContainer">
+    <div class="terminal-header">
+      <div class="mac-buttons mac-close"></div>
+      <div class="mac-buttons mac-minimize"></div>
+      <div class="mac-buttons mac-maximize"></div>
+    </div>
+    <div class="terminal" id="terminal"></div>
+  </div>
+
+  <div class="centered">
+    <div id="loading" class="hidden"><span id="loadingBar">[                    ]</span></div>
+
+    <div class="hidden" id="puzzleSection">
+      <p id="challengeQuestion">
+        I'm someone who ran 10K in under 3 months of training. I dream of writing films that speak, and I love horses—maybe because they carry both strength and silence. I'm also someone who listens deeply and forgives quietly. So, if this challenge is meant to honor one name—the one who embodies all of this—what name do you think it is?
+      </p>
+      <input type="text" id="puzzleAnswer" placeholder="Your answer here">
+      <br>
+      <button id="startPuzzleBtn">Submit</button>
+      <p id="puzzleFeedback" class="hidden"></p>
+    </div>
+
+    <div class="hidden" id="flagSection">
+      <p>Great job solving the puzzle! Now, please enter the flag you've earned:</p>
+      <input type="text" id="inputFlag" placeholder="Enter flag: CHT{...}">
+      <br>
+      <button id="submitBtn">Submit</button>
+      <div id="response" class="hidden"></div>
+    </div>
+
+    <button id="revealBtn" class="hidden">Click here to begin</button>
+  </div>
+
+  <audio id="typeSound" src="https://assets.mixkit.co/sfx/preview/mixkit-typewriter-soft-clicks-1362.mp3"></audio>
+  <audio id="tickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3"></audio>
+
+  <script>
+    const message = `./appreciation.sh
+To someone I deeply believe in—someone I trust will rise above every challenge she’s facing, and defy the very odds rooted in her story.
+
+I believe she’ll become a marathoner, a remarkable screenwriter, an incredible mom, and anything else she dreams to be.
+
+Thank you for your kind emails. Feel free to interpret this “thank you” however you wish—because I trust your heart to arrive at a meaning that makes sense to you. It doesn't need to make sense to me.
+
+The fact that you’ve ever considered me a friend, even if not one of your “three closest,” is something I never took for granted. I never once asked myself, “Why am I not in one of the boxes?”—because truthfully, I didn’t feel I deserved to be there.
+
+So, as a small token of appreciation—for your kindness, trust, and unwavering support—here is a digital gift. A quiet challenge. Something small, but honest, from me to you.
+
+To claim your gift, solve this challenge and you’ll receive a flag as your reward. Then, you’ll receive a small, personal gift that celebrates your success. Good luck!
+`;
+
+    const terminal = document.getElementById("terminal");
+    const loading = document.getElementById("loading");
+    const loadingBar = document.getElementById("loadingBar");
+    const typeSound = document.getElementById("typeSound");
+    const tickSound = document.getElementById("tickSound");
+    const loadingScreen = document.getElementById("loadingScreen");
+    const terminalContainer = document.getElementById("terminalContainer");
+    let index = 0;
+
+    function typeWriter() {
+      if (index < message.length) {
+        terminal.innerHTML += message.charAt(index);
+        typeSound.currentTime = 0;
+        typeSound.play();
+        index++;
+        setTimeout(typeWriter, 40);
+      } else {
+        document.getElementById("revealBtn").classList.remove("hidden");
+      }
+    }
+
+    function showLoadingSentences() {
+      let sentenceIndex = 1;
+      const sentences = [
+        document.getElementById("sentence1"),
+        document.getElementById("sentence2"),
+        document.getElementById("sentence3"),
+        document.getElementById("sentence4"),
+        document.getElementById("sentence5"),
+        document.getElementById("sentence6")
+      ];
+
+      const interval = setInterval(() => {
+        if (sentenceIndex <= sentences.length) {
+          sentences[sentenceIndex - 1].style.visibility = 'visible';
+          sentenceIndex++;
+        } else {
+          clearInterval(interval);
+          setTimeout(() => {
+            loadingScreen.style.display = 'none';
+            terminalContainer.style.display = 'block';
+            typeWriter();
+          }, 1000);
+        }
+      }, 1500);
+    }
+
+    setTimeout(showLoadingSentences, 500);
+
+    document.getElementById("revealBtn").addEventListener("click", () => {
+      const totalBlocks = 20;
+      let filled = 0;
+
+      loading.classList.remove("hidden");
+      loadingBar.textContent = `[${" ".repeat(totalBlocks)}]`;
+
+      const interval = setInterval(() => {
+        filled++;
+        const blocks = "█".repeat(filled);
+        const spaces = " ".repeat(totalBlocks - filled);
+        loadingBar.textContent = `[${blocks}${spaces}]`;
+        tickSound.currentTime = 0;
+        tickSound.play();
+
+        if (filled >= totalBlocks) {
+          clearInterval(interval);
+          loading.classList.add("hidden");
+          document.getElementById("puzzleSection").classList.remove("hidden");
+          document.getElementById("revealBtn").classList.add("hidden");
+        }
+      }, 100);
+    });
+
+    document.getElementById("startPuzzleBtn").addEventListener("click", () => {
+      const puzzleInput = document.getElementById("puzzleAnswer").value.trim().toLowerCase();
+      const feedback = document.getElementById("puzzleFeedback");
+      feedback.classList.remove("hidden");
+
+      if (puzzleInput === "tuqa") { // Now it works for all cases
+        const flag = "CHT{You_Are_Amazing}";
+        alert(`✔ Correct! Your flag is: ${flag}`);
+        feedback.innerText = "✔ That’s it. Your name was always the answer.";
+        feedback.classList.add("correct");
+        document.getElementById("flagSection").classList.remove("hidden");
+        document.getElementById("puzzleSection").classList.add("hidden");
+      } else {
+        feedback.innerText = "❌ Not quite. Try again, you already know it.";
+        feedback.classList.remove("correct");
+      }
+    });
+
+    document.getElementById("submitBtn").addEventListener("click", () => {
+      const flagInput = document.getElementById("inputFlag").value.trim();
+      const response = document.getElementById("response");
+      response.classList.remove("hidden");
+
+      if (flagInput === "CHT{You_Are_Amazing}") {
+        response.classList.add("correct");
+        response.innerText = "✅ Correct flag. Redirecting you to something soft...";
+        setTimeout(() => {
+          window.location.href = "https://youtu.be/HHQ8CjLoW5o?si=R3t8fgj0BNdqoF13";
+        }, 3000);
+      } else {
+        response.classList.remove("correct");
+        response.innerText = "❌ That’s not the flag. Try again, kind soul.";
+      }
+    });
+  </script>
+</body>
+</html>
