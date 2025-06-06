@@ -19,13 +19,12 @@
       font-family: 'Courier New', Courier, monospace;
       color: #00ff66;
       animation: crtFlicker 1.5s infinite;
-      padding: 0;
-      margin: 0;
-      height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
+      height: 100vh;
+      margin: 0;
       overflow: hidden;
     }
 
@@ -92,7 +91,6 @@
       color: #1e1e1e;
       cursor: pointer;
       font-weight: bold;
-      box-shadow: none;
       transition: background-color 0.3s ease, transform 0.2s ease;
     }
 
@@ -117,7 +115,7 @@
       padding: 20px;
     }
 
-    #challengeQuestion {
+    #challengeQuestion, #hashQuestion {
       color: white;
       font-size: 18px;
       margin-bottom: 20px;
@@ -150,12 +148,12 @@
 </head>
 <body>
   <div class="loading-screen" id="loadingScreen">
-    <p id="sentence1">Connecting to your message...</p>
-    <p id="sentence2">Authenticating sender...</p>
-    <p id="sentence3">Loading quiet gratitude...</p>
-    <p id="sentence4">Decrypting affection...</p>
-    <p id="sentence5">Preparing something personal...</p>
-    <p id="sentence6">Ready. Press reveal when you're ready.</p>
+    <p id="sentence1">Connecting to Chivo's workspace...</p>
+    <p id="sentence2">Establishing a secure connection...</p>
+    <p id="sentence3">Logging into Chivo's system...</p>
+    <p id="sentence4">Ready to explore the terminal...</p>
+    <p id="sentence5">Authenticating... this may take a moment...</p>
+    <p id="sentence6">Everything is set. You are now ready!</p>
   </div>
 
   <div class="terminal-container" id="terminalContainer">
@@ -170,22 +168,27 @@
   <div class="centered">
     <div id="loading" class="hidden"><span id="loadingBar">[                    ]</span></div>
 
+    <div class="hidden" id="hashSection">
+      <p id="hashQuestion">
+        <strong>CS challenge:</strong><br>
+        What is the default port number for <code>HTTP</code>?
+        <br><small>Hint: Every browser uses it 😉</small>
+      </p>
+      <input type="text" id="hashInput" placeholder="Your answer here">
+      <br>
+      <button id="hashSubmit">Submit</button>
+      <p id="hashFeedback" class="hidden"></p>
+    </div>
+
     <div class="hidden" id="puzzleSection">
       <p id="challengeQuestion">
-        I'm someone who ran 10K in under 3 months of training. I dream of writing films that speak, and I love horses—maybe because they carry both strength and silence. I'm also someone who listens deeply and forgives quietly. So, if this challenge is meant to honor one name—the one who embodies all of this—what name do you think it is?
+        She’s smart, sweet, and a little sassy when she wants to be. Her name? The one that made me stay longer in the chat, smile wider, and think softer.<br><br>
+        What name made the screen feel less digital and more... warm?
       </p>
       <input type="text" id="puzzleAnswer" placeholder="Your answer here">
       <br>
       <button id="startPuzzleBtn">Submit</button>
       <p id="puzzleFeedback" class="hidden"></p>
-    </div>
-
-    <div class="hidden" id="flagSection">
-      <p>Great job solving the puzzle! Now, please enter the flag you've earned:</p>
-      <input type="text" id="inputFlag" placeholder="Enter flag: CHT{...}">
-      <br>
-      <button id="submitBtn">Submit</button>
-      <div id="response" class="hidden"></div>
     </div>
 
     <button id="revealBtn" class="hidden">Click here to begin</button>
@@ -195,18 +198,21 @@
   <audio id="tickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3"></audio>
 
   <script>
-    const message = `./appreciation.sh
-To someone I deeply believe in—someone I trust will rise above every challenge she’s facing, and defy the very odds rooted in her story.
+    const message = `./init.sh
 
-I believe she’ll become a marathoner, a remarkable screenwriter, an incredible mom, and anything else she dreams to be.
+You know, sometimes, the smallest choices lead to the most unexpected blessings. Deciding to spend more time on that app seemed random—yet, it brought me face to face with someone rare.
 
-Thank you for your kind emails. Feel free to interpret this “thank you” however you wish—because I trust your heart to arrive at a meaning that makes sense to you. It doesn't need to make sense to me.
+We didn’t speak long, but I felt something familiar in your energy… safe, warm, and genuine. There’s a sweetness behind your words, and a strength behind your silence. It didn’t take long for me to see that there’s a soul worth admiring behind all that intellect.
 
-The fact that you’ve ever considered me a friend, even if not one of your “three closest,” is something I never took for granted. I never once asked myself, “Why am I not in one of the boxes?”—because truthfully, I didn’t feel I deserved to be there.
+I don’t need to know everything about you to know that you're someone special. Your ambition, your drive to keep evolving, to become the best version of yourself—it’s powerful. I see it. And I respect it. I’m proud of who you are, and who you're becoming.
 
-So, as a small token of appreciation—for your kindness, trust, and unwavering support—here is a digital gift. A quiet challenge. Something small, but honest, from me to you.
+Farah, or shall I say Fofo, you truly are the sweetest Computer Science graduate I’ve ever come across—and that title’s not given lightly.
 
-To claim your gift, solve this challenge and you’ll receive a flag as your reward. Then, you’ll receive a small, personal gift that celebrates your success. Good luck!
+On this special day, I want to wish you a heartfelt **Eid Mubarak**. May your smile shine brighter, your heart grow softer, and your dreams get closer.
+
+To make this a little more *us*, here’s a playful tech challenge. Just two questions—one to test your skills, and the other, your memory of a name that might be whispering softly between the lines.
+
+Are you ready?
 `;
 
     const terminal = document.getElementById("terminal");
@@ -216,6 +222,7 @@ To claim your gift, solve this challenge and you’ll receive a flag as your rew
     const tickSound = document.getElementById("tickSound");
     const loadingScreen = document.getElementById("loadingScreen");
     const terminalContainer = document.getElementById("terminalContainer");
+
     let index = 0;
 
     function typeWriter() {
@@ -276,10 +283,28 @@ To claim your gift, solve this challenge and you’ll receive a flag as your rew
         if (filled >= totalBlocks) {
           clearInterval(interval);
           loading.classList.add("hidden");
-          document.getElementById("puzzleSection").classList.remove("hidden");
+          document.getElementById("hashSection").classList.remove("hidden");
           document.getElementById("revealBtn").classList.add("hidden");
         }
       }, 100);
+    });
+
+    document.getElementById("hashSubmit").addEventListener("click", () => {
+      const input = document.getElementById("hashInput").value.trim();
+      const feedback = document.getElementById("hashFeedback");
+      feedback.classList.remove("hidden");
+
+      if (input === "80") {
+        feedback.innerText = "✔ You’ve got it!";
+        feedback.classList.add("correct");
+        setTimeout(() => {
+          document.getElementById("hashSection").classList.add("hidden");
+          document.getElementById("puzzleSection").classList.remove("hidden");
+        }, 1000);
+      } else {
+        feedback.innerText = "❌ Not quite. Hint: Every browser uses it 😉";
+        feedback.classList.remove("correct");
+      }
     });
 
     document.getElementById("startPuzzleBtn").addEventListener("click", () => {
@@ -287,35 +312,20 @@ To claim your gift, solve this challenge and you’ll receive a flag as your rew
       const feedback = document.getElementById("puzzleFeedback");
       feedback.classList.remove("hidden");
 
-      if (puzzleInput === "tuqa") { // Now it works for all cases
-        const flag = "CHT{You_Are_Amazing}";
-        alert(`✔ Correct! Your flag is: ${flag}`);
-        feedback.innerText = "✔ That’s it. Your name was always the answer.";
+      if (["fofosh", "fofo", "farah"].includes(puzzleInput)) {
+        const flag = "CHF{Eid_Mubarak_Queen}";
+        alert(`${flag}`);
+        feedback.innerText = "✔ Beautifully answered. Redirecting to your Eid surprise...";
         feedback.classList.add("correct");
-        document.getElementById("flagSection").classList.remove("hidden");
-        document.getElementById("puzzleSection").classList.add("hidden");
-      } else {
-        feedback.innerText = "❌ Not quite. Try again, you already know it.";
-        feedback.classList.remove("correct");
-      }
-    });
-
-    document.getElementById("submitBtn").addEventListener("click", () => {
-      const flagInput = document.getElementById("inputFlag").value.trim();
-      const response = document.getElementById("response");
-      response.classList.remove("hidden");
-
-      if (flagInput === "CHT{You_Are_Amazing}") {
-        response.classList.add("correct");
-        response.innerText = "✅ Correct flag. Redirecting you to something soft...";
         setTimeout(() => {
-          window.location.href = "https://youtu.be/HHQ8CjLoW5o?si=R3t8fgj0BNdqoF13";
-        }, 3000);
+          window.location.href = "https://www.youtube.com/watch?v=K0Oz48AL_xM";
+        }, 2500);
       } else {
-        response.classList.remove("correct");
-        response.innerText = "❌ That’s not the flag. Try again, kind soul.";
+        feedback.innerText = "❌ Not quite. Try again, softly.";
+        feedback.classList.remove("correct");
       }
     });
   </script>
 </body>
 </html>
+
